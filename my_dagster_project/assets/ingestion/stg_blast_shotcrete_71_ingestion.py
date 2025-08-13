@@ -43,10 +43,10 @@ def register_asset_metadata():
     description="Raw blast shotcrete data for SQL staging, filtered by latest process per BlastID+Source.",
     compute_kind="pandas",
     owners=["javkhlanbu@ot.mn", "myagmarsurens@ot.mn"],
-    tags={"domain": "blast", "source": "MineSys", "type": "stg"},  # MOVED type to tags
+    tags={"domain": "blast", "source": "SQL71", "type": "stg"},  # MOVED type to tags
     # REMOVED: type="stg",  <-- This was causing the error
     metadata={
-        "source_system": "MineSys SQL71",
+        "source_system": "[MNOYTSQL71].[OTUGBlastLogSheet]",
         "target_schema": "stg",
         "load_window": "dynamic via get_load_window()",
         "owner": "javkhlanbu",

@@ -1,4 +1,4 @@
-from dagster import Definitions
+from dagster import Definitions, sensor, DefaultSensorStatus
 
 # Import your existing assets
 from my_dagster_project.assets import all_assets as existing_assets
@@ -18,7 +18,7 @@ try:
     # Create monitoring sensors only if modules are available
     @sensor(
         minimum_interval_seconds=300,
-        default_status=False  # Start as disabled
+        default_status=DefaultSensorStatus.STOPPED  # Start as disabled
     )
     def health_monitoring_sensor(context):
         """Monitor asset health and alert on issues"""
