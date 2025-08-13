@@ -1,0 +1,53 @@
+# Environment-specific database configuration
+environments:
+  dev:
+    metadata_db:
+      server: "MNOYTSQLD40"
+      database: "UG_Ore_Tracking"
+      driver: "{ODBC Driver 17 for SQL Server}"
+      trusted_connection: true
+    
+    data_db:
+      server: "MNOYTSQLD40"
+      database: "UG_Ore_Tracking"
+      driver: "{ODBC Driver 17 for SQL Server}"
+      trusted_connection: true
+    
+    source_dbs:
+      sql71:
+        server: "MNOYTSQL71"
+        database: "OTUGBlastLogSheet"
+        driver: "{ODBC Driver 17 for SQL Server}"
+        trusted_connection: true
+    
+    monitoring_db:
+      server: "MNOYTSQLD40"
+      database: "UG_Ore_Tracking_Monitoring_Dev"
+      driver: "{ODBC Driver 17 for SQL Server}"
+      trusted_connection: true
+  
+  prod:
+    metadata_db:
+      server: "MNOYTSQLD40"
+      database: "UG_Ore_Tracking_Metadata"
+      driver: "{ODBC Driver 17 for SQL Server}"
+      trusted_connection: true
+    
+    data_db:
+      server: "MNOYTSQLD40"
+      database: "UG_Ore_Tracking"
+      driver: "{ODBC Driver 17 for SQL Server}"
+      trusted_connection: true
+    
+    source_dbs:
+      sql71:
+        server: "MNOYTSQL71"
+        database: "OTUGBlastLogSheet"
+        driver: "{ODBC Driver 17 for SQL Server}"
+        trusted_connection: true
+    
+    monitoring_db:
+      server: "MNOYTSQLD40"
+      database: "UG_Ore_Tracking_Monitoring"
+      driver: "{ODBC Driver 17 for SQL Server}"
+      trusted_connection: true

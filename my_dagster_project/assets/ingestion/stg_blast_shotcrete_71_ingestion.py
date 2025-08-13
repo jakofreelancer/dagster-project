@@ -1,7 +1,28 @@
 import pandas as pd
-from dagster import asset
+from dagster import asset, Output, MetadataValue
 from my_dagster_project.shared.load_window import get_load_window
 from my_dagster_project.shared.ingest_utils import ingest_from_sql
+from my_dagster_project.core.metadata_manager import metadata_manager
+from my_dagster_project.core.monitoring import monitor
+from my_dagster_project.core.logging_config import get_logger
+
+logger = get_logger(__name__)
+
+# Register this asset in the metadata system
+metadata_manager.register_asset(
+    asset_key="blast.raw_blast_shotcrete_71",
+    asset_name="raw_blast_shotcrete_71_data",
+    asset_type="source",
+    group_name="stg__ingestion",
+    pipeline_name="blast_shotcrete_pipeline",
+    owners=["javkhlanbu@ot.mn", "myagmarsurens@ot.mn"],
+    tags={"domain": "blast", "source": "MineSys"},
+    metadata={
+        "source_system": "MineSys SQL71",
+        "target_schema": "stg",
+        "schedule": "daily"
+    }
+)
 
 @asset(
     name="raw_blast_shotcrete_71_data",
@@ -20,14 +41,15 @@ from my_dagster_project.shared.ingest_utils import ingest_from_sql
         "type": "raw",
         "schedule": "daily"
     },
-    code_version="v1.2"
+    code_version="v1.3"
 )
-def raw_blast_shotcrete_71_data() -> pd.DataFrame:
+def raw_blast_shotcrete_71_data(context) -> pd.DataFrame:
     '''
         Ingests raw blast shotcrete data from SQL Server MNOYTSQL71, database OTUGBlastLogSheet.
-        The data is filtered to include only the latest blast process for each BlastID and Source.
-        The query retrieves relevant columns and ensures that the data is within the specified load window.
+        Enhanced with metadata tracking and monitoring.
     '''
+
+    logger.info("Starting blast shotcrete data ingestion")
 
     query = '''
         WITH BlastRelatedProcess AS (
@@ -78,16 +100,61 @@ def raw_blast_shotcrete_71_data() -> pd.DataFrame:
     '''
 
     start, end = get_load_window()
+    logger.info(f"Load window: {start} to {end}")
 
-    df = ingest_from_sql(
-        sql_server='MNOYTSQL71',
-        sql_database='OTUGBlastLogSheet',
-        query=query,
-        date_params=[start, end]
-    )
-    print(df.dtypes)
-    print(df.head())
-
-    return df
+    try:
+        df = ingest_from_sql(
+            sql_server='MNOYTSQL71',
+            sql_database='OTUGBlastLogSheet',
+            query=query,
+            date_params=[start, end]
+        )
+        
+        # Log metrics
+        monitor.record_metric(
+            pipeline_name="blast_shotcrete_pipeline",
+            metric_name="records_ingested",
+            metric_value=len(df),
+            asset_key="blast.raw_blast_shotcrete_71"
+        )
+        
+        # Save execution metadata
+        metadata_manager.save_asset_execution(
+            asset_key="blast.raw_blast_shotcrete_71",
+            run_id=context.run_id,
+            window_start=start,
+            window_end=end,
+            records_processed=len(df),
+            metadata={
+                "columns": list(df.columns),
+                "dtypes": df.dtypes.to_dict()
+            }
+        )
+        
+        # Add Dagster UI metadata
+        context.add_output_metadata({
+            "row_count": len(df),
+            "window_start": str(start),
+            "window_end": str(end),
+            "preview": MetadataValue.md(df.head().to_markdown())
+        })
+        
+        logger.info(f"Successfully ingested {len(df)} records")
+        
+        return df
+        
+    except Exception as e:
+        logger.error(f"Ingestion failed: {str(e)}", exc_info=True)
+        
+        metadata_manager.save_asset_execution(
+            asset_key="blast.raw_blast_shotcrete_71",
+            run_id=context.run_id,
+            window_start=start,
+            window_end=end,
+            status="failed",
+            metadata={"error": str(e)}
+        )
+        
+        raise
 
 all_assets = [raw_blast_shotcrete_71_data]
