@@ -2,27 +2,40 @@ import pandas as pd
 from dagster import asset, Output, MetadataValue
 from my_dagster_project.shared.load_window import get_load_window
 from my_dagster_project.shared.ingest_utils import ingest_from_sql
-from my_dagster_project.core.metadata_manager import metadata_manager
-from my_dagster_project.core.monitoring import monitor
-from my_dagster_project.core.logging_config import get_logger
 
-logger = get_logger(__name__)
+# Import enterprise features conditionally
+try:
+    from my_dagster_project.core.metadata_manager import metadata_manager
+    from my_dagster_project.core.monitoring import monitor
+    from my_dagster_project.core.logging_config import get_logger
+    logger = get_logger(__name__)
+    ENTERPRISE_ENABLED = True
+except ImportError:
+    ENTERPRISE_ENABLED = False
+    import logging
+    logger = logging.getLogger(__name__)
 
-# Register this asset in the metadata system
-metadata_manager.register_asset(
-    asset_key="blast.raw_blast_shotcrete_71",
-    asset_name="raw_blast_shotcrete_71_data",
-    asset_type="source",
-    group_name="stg__ingestion",
-    pipeline_name="blast_shotcrete_pipeline",
-    owners=["javkhlanbu@ot.mn", "myagmarsurens@ot.mn"],
-    tags={"domain": "blast", "source": "MineSys"},
-    metadata={
-        "source_system": "MineSys SQL71",
-        "target_schema": "stg",
-        "schedule": "daily"
-    }
-)
+# Register asset only if enterprise features are available and after initialization
+def register_asset_metadata():
+    """Register this asset in the metadata system - call this separately"""
+    if ENTERPRISE_ENABLED:
+        try:
+            metadata_manager.register_asset(
+                asset_key="blast.raw_blast_shotcrete_71",
+                asset_name="raw_blast_shotcrete_71_data",
+                asset_type="source",
+                group_name="stg__ingestion",
+                pipeline_name="blast_shotcrete_pipeline",
+                owners=["javkhlanbu@ot.mn", "myagmarsurens@ot.mn"],
+                tags={"domain": "blast", "source": "MineSys"},
+                metadata={
+                    "source_system": "MineSys SQL71",
+                    "target_schema": "stg",
+                    "schedule": "daily"
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Could not register asset metadata: {e}")
 
 @asset(
     name="raw_blast_shotcrete_71_data",
@@ -30,8 +43,8 @@ metadata_manager.register_asset(
     description="Raw blast shotcrete data for SQL staging, filtered by latest process per BlastID+Source.",
     compute_kind="pandas",
     owners=["javkhlanbu@ot.mn", "myagmarsurens@ot.mn"],
-    tags={"domain": "blast", "source": "MineSys"},
-    type="stg",
+    tags={"domain": "blast", "source": "MineSys", "type": "stg"},  # MOVED type to tags
+    # REMOVED: type="stg",  <-- This was causing the error
     metadata={
         "source_system": "MineSys SQL71",
         "target_schema": "stg",
@@ -45,11 +58,12 @@ metadata_manager.register_asset(
 )
 def raw_blast_shotcrete_71_data(context) -> pd.DataFrame:
     '''
-        Ingests raw blast shotcrete data from SQL Server MNOYTSQL71, database OTUGBlastLogSheet.
-        Enhanced with metadata tracking and monitoring.
+    Ingests raw blast shotcrete data from SQL Server MNOYTSQL71, database OTUGBlastLogSheet.
+    Enhanced with metadata tracking and monitoring when available.
     '''
 
-    logger.info("Starting blast shotcrete data ingestion")
+    if ENTERPRISE_ENABLED:
+        logger.info("Starting blast shotcrete data ingestion")
 
     query = '''
         WITH BlastRelatedProcess AS (
@@ -100,7 +114,9 @@ def raw_blast_shotcrete_71_data(context) -> pd.DataFrame:
     '''
 
     start, end = get_load_window()
-    logger.info(f"Load window: {start} to {end}")
+    
+    if ENTERPRISE_ENABLED:
+        logger.info(f"Load window: {start} to {end}")
 
     try:
         df = ingest_from_sql(
@@ -110,50 +126,62 @@ def raw_blast_shotcrete_71_data(context) -> pd.DataFrame:
             date_params=[start, end]
         )
         
-        # Log metrics
-        monitor.record_metric(
-            pipeline_name="blast_shotcrete_pipeline",
-            metric_name="records_ingested",
-            metric_value=len(df),
-            asset_key="blast.raw_blast_shotcrete_71"
-        )
-        
-        # Save execution metadata
-        metadata_manager.save_asset_execution(
-            asset_key="blast.raw_blast_shotcrete_71",
-            run_id=context.run_id,
-            window_start=start,
-            window_end=end,
-            records_processed=len(df),
-            metadata={
-                "columns": list(df.columns),
-                "dtypes": df.dtypes.to_dict()
-            }
-        )
+        # Enterprise features if available
+        if ENTERPRISE_ENABLED:
+            try:
+                # Log metrics
+                monitor.record_metric(
+                    pipeline_name="blast_shotcrete_pipeline",
+                    metric_name="records_ingested",
+                    metric_value=len(df),
+                    asset_key="blast.raw_blast_shotcrete_71"
+                )
+                
+                # Save execution metadata
+                metadata_manager.save_asset_execution(
+                    asset_key="blast.raw_blast_shotcrete_71",
+                    run_id=context.run_id,
+                    window_start=start,
+                    window_end=end,
+                    records_processed=len(df),
+                    metadata={
+                        "columns": list(df.columns),
+                        "dtypes": {str(k): str(v) for k, v in df.dtypes.to_dict().items()}
+                    }
+                )
+                
+                logger.info(f"Successfully ingested {len(df)} records")
+            except Exception as e:
+                logger.warning(f"Could not save metrics/metadata: {e}")
         
         # Add Dagster UI metadata
         context.add_output_metadata({
             "row_count": len(df),
             "window_start": str(start),
             "window_end": str(end),
-            "preview": MetadataValue.md(df.head().to_markdown())
+            "preview": MetadataValue.md(df.head().to_markdown()) if not df.empty else "No data"
         })
         
-        logger.info(f"Successfully ingested {len(df)} records")
+        print(df.dtypes)
+        print(df.head())
         
         return df
         
     except Exception as e:
-        logger.error(f"Ingestion failed: {str(e)}", exc_info=True)
-        
-        metadata_manager.save_asset_execution(
-            asset_key="blast.raw_blast_shotcrete_71",
-            run_id=context.run_id,
-            window_start=start,
-            window_end=end,
-            status="failed",
-            metadata={"error": str(e)}
-        )
+        if ENTERPRISE_ENABLED:
+            logger.error(f"Ingestion failed: {str(e)}", exc_info=True)
+            
+            try:
+                metadata_manager.save_asset_execution(
+                    asset_key="blast.raw_blast_shotcrete_71",
+                    run_id=context.run_id,
+                    window_start=start,
+                    window_end=end,
+                    status="failed",
+                    metadata={"error": str(e)}
+                )
+            except:
+                pass  # Don't fail if metadata save fails
         
         raise
 
