@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  dagster:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: dagster-app
+    ports:
+      - "3000:3000"
+    environment:
+      - ENVIRONMENT=production
+      - PROJECT_NAME=dagster-project
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=dagster
+      - POSTGRES_PASSWORD=dagster_password
+      - INIT_DB=true
+    volumes:
+      - dagster_home:/opt/dagster/dagster_home
+      - ./logs:/app/logs
+    depends_on:
+      - postgres
+    networks:
+      - dagster-network
+    restart: unless-stopped
+
+  dagster-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: dagster-daemon
+    command: ["dagster-daemon", "run"]
+    environment:
+      - ENVIRONMENT=production
+      - PROJECT_NAME=dagster-project
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=dagster
+      - POSTGRES_PASSWORD=dagster_password
+    volumes:
+      - dagster_home:/opt/dagster/dagster_home
+      - ./logs:/app/logs
+    depends_on:
+      - postgres
+      - dagster
+    networks:
+      - dagster-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:13
+    container_name: dagster-postgres
+    environment:
+      POSTGRES_DB: dagster_metadata
+      POSTGRES_USER: dagster
+      POSTGRES_PASSWORD: dagster_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - dagster-network
+    restart: unless-stopped
+
+volumes:
+  dagster_home:
+  postgres_data:
+
+networks:
+  dagster-network:
+    driver: bridge

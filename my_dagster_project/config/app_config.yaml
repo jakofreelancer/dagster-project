@@ -1,0 +1,46 @@
+environment: development
+
+database:
+  metadata_db: metadata.db
+  monitoring_db: monitoring.db
+  health_db: health.db
+  scheduler_db: scheduler.db
+  assets_db: assets.db
+
+asset_management:
+  # Asset update interval in seconds (default 15 minutes)
+  update_interval: 900
+  # Auto-discovery interval in seconds (default 1 hour)
+  auto_discovery_interval: 3600
+  # Enable automatic asset discovery
+  enable_auto_discovery: true
+  # Require asset ownership
+  require_asset_ownership: true
+
+monitoring:
+  enable_alerts: true
+  enable_sla_tracking: true
+  enable_health_monitoring: true
+  # Health check intervals in seconds
+  health_check_interval: 900  # 15 minutes
+  alert_thresholds:
+    data_volume_drop: 0.2
+    execution_time_increase: 0.5
+    data_quality_threshold: 0.95
+
+governance:
+  enable_auto_discovery: true
+  auto_discovery_interval: 3600
+  require_asset_ownership: true
+
+job_scheduler:
+  # Enable automated job scheduling
+  enabled: true
+  # Default job intervals
+  health_check_job: "@every 15 minutes"
+  discovery_job: "@every 1 hour"
+  alert_processing_job: "@every 5 minutes"
+
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

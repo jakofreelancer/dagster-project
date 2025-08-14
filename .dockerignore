@@ -1,0 +1,29 @@
+# Docker ignore file
+.git
+.gitignore
+ README.md
+ Dockerfile
+ Dockerfile.prod
+ docker-compose.yml
+ .dockerignore
+ venv/
+ __pycache__/
+ *.pyc
+ *.pyo
+ *.pyd
+ .Python
+ .pytest_cache/
+.coverage
+.gitignore
+.env
+.venv
+venv/
+env/
+.envrc
+.python-version
+.DS_Store
+Thumbs.db
+tmp/
+.temp/
+logs/*.log
+!logs/.gitkeep
