@@ -2,114 +2,348 @@
 
 An enterprise-level asset management system built with Dagster, featuring automated discovery, health monitoring, and centralized governance.
 
-## Features
+## System Architecture
 
-### Asset Management
-- **Automated Asset Discovery**: Automatically discovers and registers assets
-- **Centralized Metadata Storage**: Stores comprehensive asset metadata
-- **Flexible Update Intervals**: Configurable asset update frequencies
-- **System Information Tracking**: Captures server, host, and environment details
-
-### Monitoring & Governance
-- **Health Monitoring**: Automated health checks for all assets
-- **Alert System**: Configurable alerting for asset issues
-- **Governance Dashboard**: Centralized dashboard for asset governance
-- **Lineage Tracking**: Automatic asset lineage and dependency tracking
-
-### Enterprise Features
-- **Low Maintenance**: Smart update mechanisms reduce unnecessary operations
-- **Scalable Architecture**: Modular design for horizontal scaling
-- **Docker Support**: Containerized deployment for easy scaling
-- **Environment Awareness**: Automatic environment detection and tagging
-
-## Project Structure
-
+### Overview
 ```
-my_dagster_project/
-├── assets/                 # Asset definitions
-│   ├── ingestion/          # Data ingestion assets
-│   ├── loaders/            # Data loading assets
-│   └── test_asset.py       # Test asset example
-├── core/                   # Core system components
-│   ├── asset_discovery.py  # Asset discovery system
-│   ├── asset_record.py     # Asset record management
-│   ├── config_manager.py   # Configuration management
-│   ├── health_monitor.py   # Health monitoring system
-│   ├── job_scheduler.py    # Automated job scheduling
-│   ├── metadata_store.py   # Metadata storage
-│   └── monitoring.py       # Monitoring system
-├── governance/             # Governance components
-│   └── dashboard.py        # Governance dashboard
-├── jobs/                   # Job definitions
-│   ├── automated_jobs.py   # Automated maintenance jobs
-│   └── data_ingestion_job.py # Data ingestion job
-├── schedules/              # Schedule definitions
-├── scripts/                # Utility scripts
-│   ├── asset_manager.py    # CLI asset management tool
-│   ├── initialize.py        # System initialization
-│   └── init_db.py          # Database initialization
-├── sensors/                # Sensor definitions
-│   └── asset_discovery_sensor.py # Asset discovery sensor
-├── shared/                 # Shared utilities
-│   └── system_info.py      # System information utilities
-└── definitions.py          # Dagster definitions
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Docker Container                             │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │   Dagster UI    │    │ Dagster Daemon  │    │   Scheduler     │ │
+│  │  (Web Server)   │◄──►│   (Services)    │◄──►│   (Jobs)        │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│           │                         │                     │        │
+│           ▼                         ▼                     ▼        │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│  │ Asset Discovery │    │ Health Monitor  │    │ Alert System    │ │
+│  │    Service      │    │    Service      │    │    Service      │ │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘ │
+│           │                         │                     │        │
+│           ▼                         ▼                     ▼        │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    SQLite Databases                         │   │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │   │
+│  │  │ metadata.db │ │ monitor.db  │ │ health.db   │           │   │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘           │   │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │   │
+│  │  │schedule.db  │ │ assets.db   │ │ (per asset) │           │   │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘           │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    ┌───────────────────┐
+                    │   Data Sources    │
+                    │ (SQL, APIs, etc.) │
+                    └───────────────────┘
 ```
 
-## Quick Start
+### Core Components
 
-### Development Setup
+1. **Dagster Core**: Orchestrates asset pipelines and workflows
+2. **Asset Management System**: 
+   - Automated discovery and registration
+   - Centralized metadata storage
+   - Health monitoring and alerting
+3. **Database Layer**: SQLite databases for metadata, monitoring, and health data
+4. **CLI Tools**: Command-line interface for system management
+5. **Docker Environment**: Containerized deployment for consistency
 
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd dagster-project
-   ```
+### Data Flow
+1. **Asset Discovery**: System automatically scans asset definitions
+2. **Registration**: Assets are registered with system metadata
+3. **Execution**: Dagster schedules and runs asset jobs
+4. **Monitoring**: Health checks and metrics collection
+5. **Alerting**: Notifications for issues and anomalies
+6. **Governance**: Centralized dashboard for asset oversight
 
-2. **Create virtual environment**:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+## Quick Start Guide
 
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Prerequisites
+- Python 3.8+
+- Docker and Docker Compose (optional, for containerized deployment)
+- Git
 
-4. **Initialize the system**:
-   ```bash
-   python my_dagster_project/scripts/initialize.py
-   ```
+### Clone the Repository
+```bash
+git clone <repository-url>
+cd dagster-project
+```
 
-5. **Start Dagster development server**:
-   ```bash
-   dagster dev
-   ```
+### Setup Development Environment
 
-### Docker Setup
+#### Option 1: Local Development Setup
+```bash
+# Create virtual environment
+python -m venv venv
 
-1. **Build and start with Docker Compose**:
-   ```bash
-   docker-compose up --build
-   ```
+# Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
 
-2. **Access the Dagster UI at http://localhost:3000**
+# Install dependencies
+pip install -r requirements.txt
 
-## Configuration
+# Initialize the system
+python my_dagster_project/scripts/initialize.py
+```
 
-### Environment Variables
-- `ENVIRONMENT`: Deployment environment (development, staging, production)
-- `PROJECT_NAME`: Project identifier
-- `INIT_DB`: Whether to initialize database (true/false)
+#### Option 2: Docker Setup
+```bash
+# Build and start with Docker Compose
+docker-compose up --build
 
-### Configuration Files
-- `config/app_config.yaml`: Main application configuration
-- `config/dagster.yaml`: Dagster storage configuration
-- `config/workspace.yaml`: Dagster workspace configuration
+# Access the Dagster UI at http://localhost:3000
+```
 
-## CLI Commands
+### Running the System
 
-The project includes a comprehensive CLI tool for asset management:
+#### Local Development
+```bash
+# Start Dagster development server
+dagster dev
+
+# Access the UI at http://localhost:3000
+```
+
+#### Docker Deployment
+```bash
+# Development environment
+docker-compose up
+
+# Production environment
+docker-compose -f docker-compose.prod.yml up
+```
+
+## Development Workflow
+
+### Creating New Assets
+
+#### 1. Ingestion Asset
+Create a new file in `my_dagster_project/assets/ingestion/`:
+
+```python
+# my_dagster_project/assets/ingestion/my_new_data_ingestion.py
+import pandas as pd
+from dagster import asset
+from my_dagster_project.shared.load_window import get_load_window
+from my_dagster_project.shared.ingest_utils import ingest_from_sql
+
+@asset(
+    name="raw_my_new_data",
+    group_name="stg__ingestion",
+    description="Raw my new data for SQL staging.",
+    compute_kind="pandas",
+    owners=["your.email@company.com"],
+    tags={"domain": "my_domain", "source": "MySource", "type": "ingestion"},
+    metadata={
+        "source_system": "My Source System",
+        "target_schema": "stg",
+        "load_window": "dynamic via get_load_window()",
+        "owner": "your_username",
+        "team": "Your Team"
+    }
+)
+def raw_my_new_data(context) -> pd.DataFrame:
+    '''Ingests raw my new data from source system.'''
+    
+    query = '''
+        SELECT * FROM my_source_table
+        WHERE created_date >= ? AND created_date < ?
+    '''
+    
+    start, end = get_load_window()
+    
+    df = ingest_from_sql(
+        sql_server='MY_SERVER',
+        sql_database='MY_DATABASE',
+        query=query,
+        date_params=[start, end]
+    )
+    
+    # Add Dagster UI metadata
+    context.add_output_metadata({
+        "row_count": len(df),
+        "window_start": str(start),
+        "window_end": str(end),
+        "preview": df.head().to_markdown() if not df.empty else "No data"
+    })
+    
+    return df
+
+# Register this asset in the all_assets list
+all_assets = [raw_my_new_data]
+```
+
+#### 2. Loading Asset
+Create a new file in `my_dagster_project/assets/loaders/`:
+
+```python
+# my_dagster_project/assets/loaders/my_new_data_loader.py
+from dagster import AssetExecutionContext, asset, AssetIn
+from my_dagster_project.shared.load_to_sql_utils import load_to_stg_table, sanitize_dataframe
+from pandas import DataFrame
+
+@asset(
+    name="stg_my_new_data",
+    ins={"raw_my_new_data": AssetIn()},
+    group_name="stg__loaders",
+    description="Loads raw my new data into staging table.",
+    compute_kind="pandas",
+    owners=["your.email@company.com"],
+    tags={"domain": "my_domain", "source": "MySource", "type": "loader"},
+    metadata={
+        "target_table": "my_new_data_staging",
+        "target_schema": "stg"
+    }
+)
+def stg_my_new_data(
+    context: AssetExecutionContext,
+    raw_my_new_data: DataFrame
+):
+    '''Loads the raw my new data into a preparation table.'''
+    
+    sanitized_data = sanitize_dataframe(raw_my_new_data)
+    
+    load_to_stg_table(
+        context=context,
+        df=sanitized_data,
+        target_table_name='my_new_data_staging'
+    )
+
+# Register this asset in the all_assets list
+all_assets = [stg_my_new_data]
+```
+
+#### 3. Transformation Asset
+Create a new file in `my_dagster_project/assets/`:
+
+```python
+# my_dagster_project/assets/my_new_data_transform.py
+import pandas as pd
+from dagster import AssetExecutionContext, asset, AssetIn
+
+@asset(
+    name="transformed_my_new_data",
+    ins={
+        "stg_my_new_data": AssetIn(),
+        # Add other dependencies as needed
+    },
+    group_name="transformed_data",
+    description="Transforms staging data into final format.",
+    compute_kind="pandas",
+    owners=["your.email@company.com"],
+    tags={"domain": "my_domain", "type": "transformation"},
+    metadata={
+        "business_rules": "Apply business rules X, Y, Z",
+        "output_format": "Standardized format for analytics"
+    }
+)
+def transformed_my_new_data(
+    context: AssetExecutionContext,
+    stg_my_new_data: pd.DataFrame
+) -> pd.DataFrame:
+    '''Transforms staging data into final format for analytics.'''
+    
+    # Apply transformations
+    transformed_df = stg_my_new_data.copy()
+    
+    # Example transformations
+    transformed_df['processed_date'] = pd.Timestamp.now()
+    transformed_df['record_count'] = len(transformed_df)
+    
+    # Add business logic here
+    # ...
+    
+    # Log metrics
+    context.add_output_metadata({
+        "row_count": len(transformed_df),
+        "preview": transformed_df.head().to_markdown() if not transformed_df.empty else "No data"
+    })
+    
+    return transformed_df
+
+# Register this asset
+all_assets = [transformed_my_new_data]
+```
+
+### Registering New Assets
+
+#### Automatic Registration
+The system automatically discovers new assets:
+1. Place asset files in the appropriate directories
+2. Ensure they follow the naming convention with `all_assets` list
+3. The asset discovery service will find and register them automatically
+
+#### Manual Registration
+```bash
+# Discover and register new assets manually
+python my_dagster_project/scripts/asset_manager.py discover-assets
+
+# Verify registration
+python my_dagster_project/scripts/asset_manager.py list-assets
+```
+
+### Updating Existing Assets
+
+#### 1. Code Changes
+Simply modify the asset code in its Python file. The system will:
+1. Automatically detect changes during discovery
+2. Update metadata in the central registry
+3. Maintain execution history
+
+#### 2. Manual Update Command
+```bash
+# Force asset discovery and update
+python my_dagster_project/scripts/asset_manager.py discover-assets
+
+# View updated asset details
+python my_dagster_project/scripts/asset_manager.py asset-details asset_key
+```
+
+### Schema Change Management
+
+#### Handling Source Schema Changes
+When source schemas change:
+
+1. **Update the asset code** to handle new/removed columns:
+```python
+@asset
+def raw_my_data(context) -> pd.DataFrame:
+    # Handle schema changes gracefully
+    df = ingest_from_sql(...)
+    
+    # Add default values for new columns
+    if 'new_column' not in df.columns:
+        df['new_column'] = None
+    
+    # Handle removed columns
+    expected_columns = ['col1', 'col2', 'new_column']
+    for col in expected_columns:
+        if col not in df.columns:
+            df[col] = None
+    
+    return df
+```
+
+2. **Update dependencies** that rely on the changed schema:
+```bash
+# Run discovery to update lineage
+python my_dagster_project/scripts/asset_manager.py discover-assets
+
+# Check asset health to identify issues
+python my_dagster_project/scripts/asset_manager.py asset-health
+```
+
+#### Schema Evolution Best Practices
+1. **Backward Compatibility**: Maintain compatibility with existing consumers
+2. **Versioning**: Use asset versioning for major changes
+3. **Documentation**: Update asset metadata with schema change notes
+4. **Testing**: Test downstream assets after schema changes
+
+### Asset Management Commands
 
 ```bash
 # Initialize the system
@@ -121,10 +355,10 @@ python my_dagster_project/scripts/asset_manager.py list-assets
 # Check asset health
 python my_dagster_project/scripts/asset_manager.py asset-health
 
-# View asset details
+# View detailed asset information
 python my_dagster_project/scripts/asset_manager.py asset-details <asset-key>
 
-# Discover and register assets
+# Discover and register new assets
 python my_dagster_project/scripts/asset_manager.py discover-assets
 
 # Generate asset inventory report
@@ -132,73 +366,144 @@ python my_dagster_project/scripts/asset_manager.py asset-inventory
 
 # Generate ownership report
 python my_dagster_project/scripts/asset_manager.py ownership-report
+
+# Simulate asset execution (for testing)
+python my_dagster_project/scripts/simulate_execution.py
 ```
 
-## Docker Deployment
+## Configuration Management
 
-### Development
+### Environment Variables
 ```bash
-docker-compose up --build
+# Set environment (development, staging, production)
+ENVIRONMENT=development
+
+# Set project name
+PROJECT_NAME=my-dagster-project
+
+# Set Dagster home directory
+DAGSTER_HOME=/opt/dagster/dagster_home
 ```
 
-### Production
-```bash
-docker-compose -f docker-compose.prod.yml up --build
-```
+### Configuration Files
+- `config/app_config.yaml`: Main application settings
+- `config/dagster.yaml`: Dagster storage configuration
+- `config/workspace.yaml`: Dagster workspace setup
 
-## Key Features Explained
+## Monitoring and Alerting
 
-### Asset Update Frequency
-Assets are updated based on configurable intervals:
-- Default: Every 15 minutes (900 seconds)
-- Configurable in `config/app_config.yaml`
-- Smart update mechanism: Only updates when interval has passed
-
-### System Information Capture
-Each asset automatically captures:
-- Server information (`server_name`, `host_name`, `machine_name`)
-- User information (`logged_user_name`)
-- System details (`operating_system`, `os_version`, `processor`)
-- Environment (`environment`, `project_name`)
-- Container information (when running in Docker)
-
-### Health Monitoring
-- Automated health checks every 15 minutes
+### Health Checks
+The system performs automated health checks:
 - Execution status monitoring
 - Data volume anomaly detection
-- Execution time performance tracking
-- Alert generation for issues
+- Performance timing analysis
+- Dependency validation
 
-### Automated Jobs
-- **Asset Discovery**: Automatically discovers new assets
-- **Health Checks**: Regular asset health monitoring
-- **Alert Processing**: Processes and notifies on alerts
+### Alert Management
+```bash
+# View active alerts
+python my_dagster_project/scripts/asset_manager.py alerts
 
-## Extending the System
+# Resolve specific alerts (in code)
+# Alerts resolve automatically when issues are fixed
+```
 
-### Adding New Assets
-1. Create asset definition in `my_dagster_project/assets/`
-2. Assets are automatically discovered and registered
-3. System information is automatically captured
+## Troubleshooting
 
-### Customizing Monitoring
-1. Modify thresholds in `config/app_config.yaml`
-2. Add custom health checks in `core/health_monitor.py`
-3. Create custom alerts in asset definitions
+### Common Issues
 
-### Adding New Jobs
-1. Define job functions in `jobs/automated_jobs.py`
-2. Register jobs in `core/job_scheduler.py`
-3. Configure schedules in `config/app_config.yaml`
+#### 1. Asset Not Discovered
+```bash
+# Check asset discovery
+python my_dagster_project/scripts/asset_manager.py discover-assets --verbose
+
+# Verify file structure and naming
+```
+
+#### 2. Database Connection Issues
+```bash
+# Check database permissions
+ls -la /opt/dagster/dagster_home/
+
+# Verify Dagster home is set
+echo $DAGSTER_HOME
+```
+
+#### 3. Docker Issues
+```bash
+# Rebuild Docker images
+docker-compose build --no-cache
+
+# Check container logs
+docker-compose logs dagster
+```
+
+### System Maintenance
+
+#### Database Maintenance
+```bash
+# Clean up old execution data (automated)
+# Configured in app_config.yaml
+
+# Backup databases
+# Part of production deployment process
+```
+
+#### Log Management
+```bash
+# View system logs
+tail -f logs/system.log
+
+# Rotate logs
+# Handled automatically by Docker logging
+```
+
+## Production Deployment
+
+### Docker Deployment
+```bash
+# Build production images
+docker-compose -f docker-compose.prod.yml build
+
+# Start production services
+docker-compose -f docker-compose.prod.yml up -d
+
+# Scale services if needed
+docker-compose -f docker-compose.prod.yml up -d --scale dagster-worker=3
+```
+
+### Environment-Specific Configuration
+1. Set environment variables for each deployment
+2. Use different configuration files per environment
+3. Configure resource limits in docker-compose
+
+## Contributing
+
+### Development Process
+1. Fork the repository
+2. Create feature branch
+3. Implement changes
+4. Test thoroughly
+5. Submit pull request
+
+### Code Standards
+- Follow existing code patterns
+- Add comprehensive documentation
+- Include unit tests for new functionality
+- Update README when adding new features
+
+### Testing
+```bash
+# Run unit tests
+pytest my_dagster_project_tests
+
+# Test asset discovery
+python my_dagster_project/scripts/asset_manager.py discover-assets --test
+
+# Validate configuration
+python my_dagster_project/scripts/validate_config.py
+```
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a pull request

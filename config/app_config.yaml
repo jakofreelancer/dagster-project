@@ -1,11 +1,11 @@
 environment: ${ENVIRONMENT:development}
 
 database:
-  metadata_db: postgresql://dagster:dagster_password@postgres:5432/dagster_metadata
-  monitoring_db: postgresql://dagster:dagster_password@postgres:5432/dagster_metadata
-  health_db: postgresql://dagster:dagster_password@postgres:5432/dagster_metadata
-  scheduler_db: postgresql://dagster:dagster_password@postgres:5432/dagster_metadata
-  assets_db: postgresql://dagster:dagster_password@postgres:5432/dagster_metadata
+  metadata_db: /opt/dagster/dagster_home/metadata.db
+  monitoring_db: /opt/dagster/dagster_home/monitoring.db
+  health_db: /opt/dagster/dagster_home/health.db
+  scheduler_db: /opt/dagster/dagster_home/scheduler.db
+  assets_db: /opt/dagster/dagster_home/assets.db
 
 asset_management:
   # Asset update interval in seconds (default 15 minutes)

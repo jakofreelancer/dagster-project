@@ -1,80 +1,41 @@
 #!/usr/bin/env python
 """
-Database initialization script for Docker deployment
+Database initialization script - SQLite version
 """
 
 import os
 import sys
 import time
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import sqlite3
 
-def wait_for_postgres():
-    """Wait for PostgreSQL to be ready"""
-    max_attempts = 30
-    attempt = 0
+def initialize_sqlite_databases():
+    """Initialize SQLite databases"""
+    dagster_home = os.environ.get('DAGSTER_HOME', '/opt/dagster/dagster_home')
     
-    while attempt < max_attempts:
-        try:
-            conn = psycopg2.connect(
-                host=os.environ.get('POSTGRES_HOST', 'postgres'),
-                port=os.environ.get('POSTGRES_PORT', '5432'),
-                user=os.environ.get('POSTGRES_USER', 'dagster'),
-                password=os.environ.get('POSTGRES_PASSWORD', 'dagster_password'),
-                database='postgres'  # Connect to default database first
-            )
-            conn.close()
-            print("PostgreSQL is ready!")
-            return True
-        except psycopg2.OperationalError as e:
-            attempt += 1
-            print(f"Attempt {attempt}: PostgreSQL not ready yet. Waiting...")
-            time.sleep(2)
+    # Create directories if they don't exist
+    os.makedirs(dagster_home, exist_ok=True)
+    os.makedirs(os.path.join(dagster_home, 'compute_logs'), exist_ok=True)
+    os.makedirs(os.path.join(dagster_home, 'storage'), exist_ok=True)
     
-    print("Failed to connect to PostgreSQL after maximum attempts")
-    return False
-
-def create_database():
-    """Create the Dagster database if it doesn't exist"""
+    # SQLite databases are automatically created when first accessed
+    # We'll just ensure the directory exists and is writable
     try:
-        # Connect to PostgreSQL server
-        conn = psycopg2.connect(
-            host=os.environ.get('POSTGRES_HOST', 'postgres'),
-            port=os.environ.get('POSTGRES_PORT', '5432'),
-            user=os.environ.get('POSTGRES_USER', 'dagster'),
-            password=os.environ.get('POSTGRES_PASSWORD', 'dagster_password'),
-            database='postgres'  # Connect to default database
-        )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cursor = conn.cursor()
-        
-        # Check if database exists
-        cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s", ('dagster_metadata',))
-        exists = cursor.fetchone()
-        
-        if not exists:
-            print("Creating dagster_metadata database...")
-            cursor.execute("CREATE DATABASE dagster_metadata")
-            print("Database created successfully!")
-        else:
-            print("Database dagster_metadata already exists.")
-        
-        cursor.close()
+        # Test database connection
+        test_db_path = os.path.join(dagster_home, 'test.db')
+        conn = sqlite3.connect(test_db_path)
+        conn.execute('CREATE TABLE IF NOT EXISTS test (id INTEGER)')
         conn.close()
+        os.remove(test_db_path)  # Clean up test database
+        print("SQLite database directory is ready!")
         return True
-        
     except Exception as e:
-        print(f"Error creating database: {e}")
+        print(f"Error initializing SQLite databases: {e}")
         return False
 
 def main():
     """Main function"""
-    print("Waiting for PostgreSQL to be ready...")
-    if not wait_for_postgres():
-        sys.exit(1)
-    
-    print("Initializing database...")
-    if not create_database():
+    print("Initializing SQLite databases...")
+    if not initialize_sqlite_databases():
         sys.exit(1)
     
     print("Database initialization completed successfully!")

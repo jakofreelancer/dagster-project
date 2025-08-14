@@ -9,52 +9,17 @@ services:
     environment:
       - ENVIRONMENT=development
       - PROJECT_NAME=dagster-project
-      - DAGSTER_HOME=/tmp/dagster_home
+      - DAGSTER_HOME=/opt/dagster/dagster_home
     volumes:
       - ./my_dagster_project:/app/my_dagster_project
       - ./config:/app/config
-      - dagster_home:/tmp/dagster_home
+      - dagster_home:/opt/dagster/dagster_home
       - ./logs:/app/logs
-    depends_on:
-      - postgres
     networks:
       - dagster-network
-
-  postgres:
-    image: postgres:13
-    container_name: dagster-postgres
-    environment:
-      POSTGRES_DB: dagster_metadata
-      POSTGRES_USER: dagster
-      POSTGRES_PASSWORD: dagster_password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    networks:
-      - dagster-network
-
-  # Uncomment the following services for production deployment
-  # dagster-daemon:
-  #   build: .
-  #   container_name: dagster-daemon
-  #   command: ["dagster-daemon", "run", "--config", "/app/config/dagster.yaml"]
-  #   environment:
-  #     - ENVIRONMENT=production
-  #     - PROJECT_NAME=dagster-project
-  #     - DAGSTER_HOME=/tmp/dagster_home
-  #   volumes:
-  #     - ./my_dagster_project:/app/my_dagster_project
-  #     - ./config:/app/config
-  #     - dagster_home:/tmp/dagster_home
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - dagster-network
 
 volumes:
   dagster_home:
-  postgres_data:
 
 networks:
   dagster-network:

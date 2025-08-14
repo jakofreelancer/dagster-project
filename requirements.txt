@@ -1,9 +1,7 @@
 dagster
 dagster-pandas
 dagster-webserver
-dagster-postgres
 pandas
 pyodbc
 PyYAML
-psycopg2-binary
 schedule
